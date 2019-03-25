@@ -9,6 +9,6 @@
     <button type="button" runat="server" onclick="addNewState()">Add new states</button>
     <button type="button" runat="server" onclick="move()">Move</button>
     <button type="button" runat="server" onclick="arrow()">draw arrow</button>
-    <button type="button" runat="server" onclick="arc()">draw arc</button>
+    <button type="button" runat="server" onclick="test()">draw arc</button>
     <asp:Button ID="Test" runat="server" Text="Button" OnClick="btn_onclick" />
 </asp:Content>
