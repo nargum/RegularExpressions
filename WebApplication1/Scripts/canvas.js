@@ -1,29 +1,9 @@
-﻿//console.log('r/place');
-
-//var canvas = document.querySelector("canvas");
-var canvas = document.getElementById('canvas');
+﻿var canvas = document.getElementById('canvas');
 canvas.width = 800;
 canvas.height = 600;
 
 var c = canvas.getContext("2d");
-var counter = 0;
-
-/*c.fillStyle = "blue";
-c.fillRect(100, 100, 100, 100);
-
-//line
-c.beginPath();
-c.moveTo(50, 300);
-c.lineTo(300, 100);
-c.strokeStyle = "red";
-c.stroke();
-
-//arc, circle
-c.beginPath();
-c.arc(300, 300, 30, 0, Math.PI, true);
-c.stroke();*/
-
-//animate();
+var counter = 1;
 
 var states = [];
 var transitions = [];
@@ -31,24 +11,262 @@ var activeTransition = null;
 var buttonType = 1;
 var mouseDown = false;
 
-function State(x, y, counter, type) {
-    this.x = x;
-    this.y = y;
-    this.counter = counter;
-    this.type = type;
-    this.movable = false;
+var circleRadius = 30;
+var x = 100;
+var y = 100;
 
-    this.draw = function () {
-        if (type == "begin") {
+class Element {
+    constructor(startX, startY, text) {
+        this.startX = startX;
+        this.startY = startY;
+        this.endX = this.startX + circleRadius + 100;
+        this.endY = this.startY;
+        this.text = text;
+        this.width = this.endX - this.startX;
+        this.height = circleRadius;
+        this.begin = true;
+        this.end = true;
+    }
+
+    draw() {
+        if (this.begin) {
+            drawCircle(this.startX, this.startY, circleRadius);
+            drawArrow(this.startX - 55, this.startY, this.startX - 35, this.startY);
+        } else {
+            drawCircle(this.startX, this.startY, circleRadius);
+        }
+
+        if (this.end) {
+            drawCircle(this.endX, this.endY, circleRadius);
+            drawCircle(this.endX, this.endY, circleRadius - 5);
+        } else {
+            drawCircle(this.endX, this.endY, circleRadius);
+        }
+        
+        drawTransition(this.startX, this.startY, this.endX, this.endY, this.text);
+    }
+
+    setStartCoord(startX, startY) {
+        this.startX = startX;
+        this.startY = startY;
+        this.endX = startX + circleRadius + 100;
+        this.endY = startY;
+    }
+
+}
+
+class StarGraph {
+    constructor(part, startX, startY) {
+        this.part = part;
+        this.startX = startX;
+        this.startY = startY;
+        this.part.begin = false;
+        this.part.end = false;
+        this.begin = true;
+        this.end = true;
+        this.width = this.part.width + 200 + 2 * circleRadius;
+        this.height = this.part.height;
+        this.endX = this.startX + this.width;
+        this.endY = this.startY;
+        this.update();
+    }
+
+    draw() {
+        
+        if (this.begin == true) {
+            drawCircle(this.startX, this.startY, circleRadius);
+            drawArrow(this.startX - 55, this.startY, this.startX - 35, this.startY);
+        } else {
+            drawCircle(this.startX, this.startY, circleRadius);
+        }
+
+        /*c.beginPath();
+        c.arcTo(this.startX, this.startY, this.part.endX, this.part.endY, 50);
+        c.stroke();*/
+        drawShapeUp(this.part.startX, this.part.startY, this.part.endX, this.part.endY, this.height, "ε");
+        drawShapeDown(this.startX, this.startY, this.endX, this.endY, this.height, "ε");
+        drawTransition(this.startX, this.startY, this.part.startX, this.part.startY, "ε");
+        this.part.draw();
+        drawTransition(this.part.endX, this.part.endY, this.endX, this.endY, "ε");
+
+        if (this.end == true) {
+            drawCircle(this.endX, this.endY, circleRadius);
+            drawCircle(this.endX, this.endY, circleRadius - 5);
+        } else {
+            drawCircle(this.endX, this.endY, circleRadius);
+        }
+    }
+
+    setStartCoord(startX, startY) {
+        this.startX = startX;
+        this.startY = startY;
+        this.endX = this.startX + this.width;
+        this.endY = this.startY;
+        this.update();
+    }
+
+    update() {
+        this.part.setStartCoord(this.startX + 100 + circleRadius, this.startY);
+        
+    }
+}
+
+class DotGraph {
+    constructor(partA, partB, startX, startY) {
+        this.partA = partA;
+        this.partB = partB;
+        this.partA.begin = false;
+        this.partB.begin = false;
+        this.partA.end = false;
+        this.partB.end = false;
+        this.begin = true;
+        this.end = true;
+        this.startX = startX;
+        this.startY = startY;
+
+        if (this.partA.height > this.partB.height) {
+            this.height = this.partA.height;
+        } else {
+            this.height = this.partB.height;
+        }
+
+        this.width = this.partA.width + this.partB.width + 100 + circleRadius;
+        this.endX = this.startX + this.width;
+        this.endY = this.startY;
+        this.update();
+    }
+
+    draw() {
+        if (this.start == true) {
+            this.partA.start = true;
+            this.partA.end = false;
+        } else {
+            this.partA.start = false;
+            this.partA.end = false;
+        }
+        this.partA.draw();
+        drawTransition(this.partA.endX, this.partA.endY, this.partB.startX, this.partB.startY, "ε");
+
+        if (this.end == true) {
+            this.partB.start = false;
+            this.partB.end = true;
+        } else {
+            this.partB.start = false;
+            this.partB.end = false;
+        }
+        this.partB.draw();
+    }
+
+    setStartCoord(startX, startY) {
+        this.startX = startX;
+        this.startY = startY;
+        this.endX = this.startX + this.width;
+        this.endY = this.startY;
+        this.update();
+    }
+
+    update() {
+        this.partA.setStartCoord(this.startX, this.startY);
+        this.partB.setStartCoord(this.partA.endX + 100 + circleRadius, this.partA.endY);
+    }
+}
+
+class PlusGraph {
+    constructor(partA, partB, startX, startY) {
+        this.partA = partA;
+        this.partB = partB;
+        this.partA.begin = false;
+        this.partB.begin = false;
+        this.partA.end = false;
+        this.partB.end = false;
+        this.begin = true;
+        this.end = true;
+        this.startX = startX;
+        this.startY = startY;
+        
+        this.height = this.partA.height + this.partB.height + 200;
+        if (this.partA.width >= this.partB.width) {
+            this.width = 200 + this.partA.width;
+        } else {
+            this.width = 200 + this.partB.width;
+        }
+        this.endX = this.startX + this.width;
+        this.endY = this.startY;
+
+        this.update();
+
+    }
+
+    draw() {
+        if (this.begin) {
+            drawCircle(this.startX, this.startY, circleRadius);
+            drawArrow(this.startX - 55, this.startY, this.startX - 35, this.startY);
+        } else {
+            drawCircle(this.startX, this.startY, circleRadius);
+        }
+
+        drawTransition(this.startX, this.startY, this.partA.startX, this.partA.startY, "ε");
+        drawTransition(this.startX, this.startY, this.partB.startX, this.partB.startY, "ε");
+        this.partA.draw();
+        this.partB.draw();
+        drawTransition(this.partA.endX, this.partA.endY, this.endX, this.endY, "ε");
+        drawTransition(this.partB.endX, this.partB.endY, this.endX, this.endY, "ε");
+
+        if (this.end) {
+            drawCircle(this.endX, this.endY, circleRadius);
+            drawCircle(this.endX, this.endY, circleRadius - 5);
+        } else {
+            drawCircle(this.endX, this.endY, circleRadius);
+        }
+    }
+
+    setStartCoord(startX, startY) {
+        this.startX = startX;
+        this.startY = startY;
+        this.endX = this.startX + this.width;
+        this.endY = this.startY;
+        this.update();
+    }
+
+    update() {
+        if (this.partA.height / 2 < 100) {
+            this.partA.setStartCoord(this.startX + 100, this.startY - 100);
+        } else {
+            this.partA.setStartCoord(this.startX + 100, this.startY - (this.partA.height / 2));
+        }
+
+        if (this.partB.height / 2 < 100) {
+            this.partB.setStartCoord(this.startX + 100, this.startY + 100);
+        } else {
+            this.partB.setStartCoord(this.startX + 100, this.startY + (this.partB.height / 2));
+        }
+    }
+}
+
+class State{
+    constructor(x, y, text, type){
+        this.x = x;
+        this.y = y;
+        this.text = text;
+        this.type = type;
+        this.movable = false;
+    }
+
+    getText() {
+        return this.text;
+    }
+
+    draw(){
+        if (this.type == "begin") {
             drawBeginState(this.x, this.y, this);
         } else {
             drawNormalState(this.x, this.y);
         }
     }
 
-    this.intersect = function (x, y) {
+    intersect(x, y){
         if (x >= this.x - 30 && x <= this.x + 30 && y >= this.y - 30 && y <= this.y + 30) {
-            console.log("clicked state " + this.counter);
+            console.log("clicked state " + this.text);
             if (buttonType == 2) {
                 this.movable = true;
             }
@@ -57,25 +275,26 @@ function State(x, y, counter, type) {
         return false;
     }
 
-    this.setCoordinates = function (x, y) {
+    setCoordinates(x, y) {
         this.x = x;
         this.y = y;
     }
-    
 }
 
-function Transition(startX, startY, endX, endY) {
-    this.startX = startX;
-    this.startY = startY;
-    this.endX = endX;
-    this.endY = endY;
-    this.active = false;
-    this.beginState = null;
-    this.endState = null;
-    this.text = "";
-    this.transitionNames = [];
+class Transition {
+    constructor(startX, startY, endX, endY) {
+        this.startX = startX;
+        this.startY = startY;
+        this.endX = endX;
+        this.endY = endY;
+        this.active = false;
+        this.beginState;
+        this.endState;
+        this.text = "";
+        this.transitionNames = [];
+    }
 
-    this.draw = function () {
+    draw() {
         this.createText();
         if (this.beginState == this.endState) {
             drawShape(this.beginState.x, this.beginState.y, this.text);
@@ -84,7 +303,7 @@ function Transition(startX, startY, endX, endY) {
         }
     }
 
-    this.createText = function () {
+    createText() {
         this.text = "";
         for (var i = 0; i < this.transitionNames.length; i++) {
             if (i == this.transitionNames.length - 1) {
@@ -143,6 +362,39 @@ class TreeNode {
 
             expression += ")";
             return expression;
+        }
+    }
+
+    drawGraph() {
+        var graph = this.buildGraph();
+        graph.draw();
+    }
+
+    buildGraph() {
+        if (this.leftChild == null && this.rightChild == null) {
+            return new Element(100, 100, this.data);
+        } else {
+            var partA;
+            var partB;
+            if (this.leftChild != null) {
+                partA = this.leftChild.buildGraph();
+            }
+
+            if (this.rightChild != null) {
+                partB = this.rightChild.buildGraph();
+            }
+
+            if (this.data == "+") {
+                return new PlusGraph(partA, partB, 100, 250);
+            }
+
+            if (this.data == ".") {
+                return new DotGraph(partA, partB, 100, 250);
+            }
+
+            if (this.data == "*") {
+                return new StarGraph(partA, 100, 250);
+            }
         }
     }
 
@@ -459,10 +711,15 @@ class Expression {
 
 
 function test() {
-    var expression = new Expression("((a)*)b");
+    /*var a = new PlusGraph(new Element(100, 100, "a"), new Element(100, 100, "b"), 100, 150);
+    var b = new PlusGraph(new Element(100, 100, "c"), a, 100, 250);
+    b.draw();*/
+    var expression = new Expression("(a+b)*");
     var root = expression.parse();
+    root.drawGraph();
     console.log(root.buildShortExpression());
     console.log(root.buildFullExpression());
+    
 }
 
 window.addEventListener('mousedown', function (event) {
@@ -673,23 +930,23 @@ function drawCircle(x, y, radius) {
 function drawText(x, y, state) {
     c.font = "30px Verdana";
     if (counter > 10) {
-        c.fillText(state.counter, x - 18, y + 12);
+        c.fillText(state.getText(), x - 18, y + 12);
     } else {
-        c.fillText(state.counter, x - 9, y + 12);
+        c.fillText(state.getText(), x - 9, y + 12);
     }
 
     
 }
 
 function drawBeginState(x, y, state) {
-    drawCircle(x, y, 30);
+    drawCircle(x, y, circleRadius);
     drawArrow(x - 55, y, x - 35, y);
-    drawCircle(x, y, 25);
+    drawCircle(x, y, circleRadius - 5);
     drawText(x, y, state);
 }
 
 function drawNormalState(x, y) {
-    drawCircle(x, y, 30);
+    drawCircle(x, y, circleRadius);
     drawText(x, y, counter);
 }
 
@@ -712,13 +969,13 @@ function drawTransition(startX, startY, endX, endY, text) {
 }
 
 function drawShape(x, y, text) {
-    var beginX = 25 * Math.cos((3 * Math.PI) / 4) + x;
-    var beginY = 25 * Math.sin((3 * Math.PI) / 4) + y;
-    var endX = 25 * Math.cos(Math.PI / 4) + x;
-    var endY = 25 * Math.sin(Math.PI / 4) + y;
+    var beginX = (circleRadius / 2) * Math.cos((3 * Math.PI) / 4) + x;
+    var beginY = (circleRadius / 2) * Math.sin((3 * Math.PI) / 4) + y;
+    var endX = (circleRadius / 2) * Math.cos(Math.PI / 4) + x;
+    var endY = (circleRadius / 2) * Math.sin(Math.PI / 4) + y;
 
-    beginY = beginY - 50;
-    endY = endY - 50;
+    //beginY = beginY - 50;
+    //endY = endY - 50;
 
     c.beginPath();
     c.moveTo(beginX, beginY);
@@ -727,6 +984,49 @@ function drawShape(x, y, text) {
     c.stroke();
     c.font = "15px Verdana";
     c.fillText(text, ((beginX + endX) / 2) - 5, endY - 55);
+}
+
+function drawShapeUp(beginX, beginY, endX, endY, height, text) {
+    c.beginPath();
+    beginY = beginY - circleRadius;
+    endY = endY - circleRadius;
+    c.moveTo(beginX, beginY);
+
+    if (height / 2 < 70) {
+        c.bezierCurveTo(beginX + 35, beginY - 70, endX - 35, endY - 70, endX, endY);
+        c.stroke();
+        c.font = "15px Verdana";
+        c.fillText(text, ((beginX + endX) / 2) - 5, endY - 55);
+    } else {
+        c.bezierCurveTo(beginX + 35, beginY - height / 2, endX - 35, endY - height / 2, endX, endY);
+        c.stroke();
+        c.font = "15px Verdana";
+        c.fillText(text, ((beginX + endX) / 2) - 5, endY - (height / 2) - 15);
+    }
+
+    /*c.bezierCurveTo(beginX + 35, beginY - height / 2, endX - 35, endY - height / 2, endX, endY);
+    c.stroke();
+    c.font = "15px Verdana";
+    c.fillText(text, ((beginX + endX) / 2) - 5, endY - 55);*/
+}
+
+function drawShapeDown(beginX, beginY, endX, endY, height, text) {
+    c.beginPath();
+    beginY = beginY + circleRadius;
+    endY = endY + circleRadius;
+    c.moveTo(beginX, beginY);
+
+    if (height / 2 < 70) {
+        c.bezierCurveTo(beginX + 35, beginY + 70, endX - 35, endY + 70, endX, endY);
+        c.stroke();
+        c.font = "15px Verdana";
+        c.fillText(text, ((beginX + endX) / 2) + 5, endY + 50);
+    } else {
+        c.bezierCurveTo(beginX + 35, beginY + height / 2, endX - 35, endY + height / 2, endX, endY);
+        c.stroke();
+        c.font = "15px Verdana";
+        c.fillText(text, ((beginX + endX) / 2) + 5, endY + (height / 2) + 15);
+    }
 }
 
 function clearCanvas() {
@@ -738,9 +1038,9 @@ function clearCanvas() {
 }
 
 function drawIdent(x, y, text) {
-    drawCircle(x, y, 30);
+    drawCircle(x, y, circleRadius);
     drawTransition(x, y, x + 150, y, text);
-    drawCircle(x + 150, y, 30);
+    drawCircle(x + 150, y, circleRadius);
 }
 
 function addNewState() {
